@@ -112,7 +112,7 @@ yes | ufw enable || true
 # 5) CLI tools: Neovim, btop, Kvantum (+ ensure Kvantum style)
 # -----------------------------
 log "[5/11] Neovim, btop, Kvantum"
-pacman -S --needed --noconfirm neovim btop kvantum kvantum-qt5 kvantum-qt6 kvantum-manager
+pacman -S --needed --noconfirm neovim btop kvantum kvantum-qt5
 
 sudo mkdir -p "$TARGET_HOME/.config/plasma-workspace/env"
 cat <<'EOF' | sudo tee "$TARGET_HOME/.config/plasma-workspace/env/kvantum.sh" >/dev/null
