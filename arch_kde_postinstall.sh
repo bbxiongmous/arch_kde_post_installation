@@ -86,7 +86,6 @@ sudo chown -R "$TARGET_USER":"$TARGET_USER" "$TARGET_HOME/.config/autostart" "$T
 # -----------------------------
 # 4) Virtualization: QEMU/KVM + libvirt + virt-manager
 #    Firewall: UFW + GUFW
-#    (FIX: do NOT install iptables-nft to avoid conflicts)
 # -----------------------------
 log "[4/11] Virtualization stack & firewall"
 pacman -S --needed --noconfirm \
@@ -109,18 +108,22 @@ ufw default allow outgoing || true
 yes | ufw enable || true
 
 # -----------------------------
-# 5) CLI tools: Neovim, btop, Kvantum (+ ensure Kvantum style)
+# 5) CLI tools: Neovim, btop, Kvantum (manager is included in package)
 # -----------------------------
 log "[5/11] Neovim, btop, Kvantum"
-pacman -S --needed --noconfirm neovim btop kvantum kvantum-qt5
+pacman -S --needed --noconfirm neovim btop kvantum
 
+# Respect Kvantum style for Qt apps
 sudo mkdir -p "$TARGET_HOME/.config/plasma-workspace/env"
 cat <<'EOF' | sudo tee "$TARGET_HOME/.config/plasma-workspace/env/kvantum.sh" >/dev/null
 #!/usr/bin/env bash
 export QT_STYLE_OVERRIDE=kvantum
 EOF
 sudo chmod +x "$TARGET_HOME/.config/plasma-workspace/env/kvantum.sh"
-sudo chown -R "$TARGET_USER":"$TARGET_USER" "$TARGET_HOME/.config/plasma-workspace"
+
+# Make sure the user's config dirs are owned by the user (fixes "Permission denied")
+sudo mkdir -p "$TARGET_HOME/.config" "$TARGET_HOME/.local/share"
+sudo chown -R "$TARGET_USER":"$TARGET_USER" "$TARGET_HOME/.config" "$TARGET_HOME/.local"
 
 # -----------------------------
 # 6) AUR helper: yay
@@ -132,24 +135,25 @@ if ! command -v yay >/dev/null 2>&1; then
 fi
 
 # -----------------------------
-# 7) Google Chrome (AUR)
+# 7) Google Chrome (AUR) – use sudoloop to avoid repeated sudo prompts
 # -----------------------------
 log "[7/11] Google Chrome (AUR)"
-as_user 'yay -S --noconfirm --needed google-chrome' || true
+as_user 'yay -S --noconfirm --needed --sudoloop google-chrome' || true
 
 # -----------------------------
 # 8) Theming: Catppuccin Mocha + Papirus icons
 # -----------------------------
 log "[8/11] Catppuccin (Kvantum + KDE colors) + Papirus icons"
 
-# Kvantum themes (user-local)
+# Create dirs as the user (avoids permission issues)
 as_user 'mkdir -p "$HOME/.config/Kvantum" "$HOME/.local/share/color-schemes"'
+
+# Kvantum themes (user-local)
 as_user 'git clone --depth=1 https://github.com/catppuccin/Kvantum.git "$HOME/.config/Kvantum/.catppuccin-tmp" || true'
 as_user 'cp -r "$HOME/.config/Kvantum/.catppuccin-tmp/themes/"* "$HOME/.config/Kvantum"/ 2>/dev/null || true'
 as_user 'rm -rf "$HOME/.config/Kvantum/.catppuccin-tmp" || true'
 
 # Kvantum selection
-sudo mkdir -p "$TARGET_HOME/.config/Kvantum"
 cat <<'EOF' | sudo tee "$TARGET_HOME/.config/Kvantum/kvantum.kvconfig" >/dev/null
 [General]
 theme=Catppuccin-Mocha
@@ -163,7 +167,7 @@ as_user 'curl -fsSL https://raw.githubusercontent.com/catppuccin/kde/refs/heads/
 
 # Icons & cursors
 pacman -S --needed --noconfirm papirus-icon-theme
-as_user 'yay -S --noconfirm --needed catppuccin-cursors-mocha' || true
+as_user 'yay -S --noconfirm --needed --sudoloop catppuccin-cursors-mocha' || true
 
 # Apply on login (safe to re-run)
 APPLY_SCRIPT="$TARGET_HOME/.config/plasma-catppuccin-apply.sh"
@@ -212,5 +216,6 @@ log "[10/11] Wrap-up"
 echo "- libvirtd enabled; user '$TARGET_USER' added to 'libvirt' group."
 echo "- UFW enabled (deny incoming / allow outgoing). See: sudo ufw status"
 echo "- Kvantum + Catppuccin Mocha + Papirus-Dark will apply on login."
+echo "- yay used with --sudoloop to minimize sudo prompts."
 
 log "[11/11] Done 🎉  Reboot recommended."
