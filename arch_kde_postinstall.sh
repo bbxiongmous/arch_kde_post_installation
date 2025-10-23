@@ -48,7 +48,6 @@ pacman -S --needed --noconfirm \
   networkmanager \
   xdg-desktop-portal xdg-desktop-portal-kde
 systemctl enable --now NetworkManager
-# PipeWire/WirePlumber start per-user automatically
 
 ### ---------- 4) Input (fcitx5 + Rime) ----------
 log "[4/16] Fcitx5 + Chinese input"
@@ -145,10 +144,10 @@ fi
 log "[11/16] Google Chrome (AUR)"
 as_user 'yay -S --noconfirm --needed --sudoloop google-chrome' || true
 
-### ---------- 12) Printing ----------
+### ---------- 12) Printing (fixed service name) ----------
 log "[12/16] Printing (CUPS)"
 pacman -S --needed --noconfirm cups cups-pdf system-config-printer
-systemctl enable --now org.cups.cupsd
+systemctl enable --now cups.service
 # For many HP printers: uncomment if needed
 # pacman -S --needed --noconfirm hplip
 
